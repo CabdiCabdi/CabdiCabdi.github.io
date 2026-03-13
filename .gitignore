@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.so
+.env
+.env.local
+
+# Node / Vercel CLI
+node_modules/
+.vercel/
+.next/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Kaggle working directory outputs (not committed)
+/kaggle/working/
