@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>cabdi.me | AI Video Magic</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #111; color: white; }
+        input { padding: 10px; width: 300px; border-radius: 5px; border: none; }
+        button { padding: 10px 20px; background: #0070f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>cabdi.me</h1>
+    <p>Turn any photo into a 5-second video.</p>
+    <input type="text" id="imgUrl" placeholder="Paste image link here (e.g. from Imgur)">
+    <button onclick="sendToKaggle()">Animate Photo</button>
+    <div id="status" style="margin-top: 20px; color: #aaa;"></div>
+
+    <script>
+        async function sendToKaggle() {
+            const status = document.getElementById('status');
+            const img = document.getElementById('imgUrl').value;
+            if(!img) return alert("Paste a link first!");
+
+            status.innerText = "🚀 Sending to Kaggle GPU... Please wait.";
+
+            try {
+                // This uses the URL we set in Vercel settings
+                const KAG_URL = "https://carman-cantorous-neil.ngrok-free.dev";
+
+                const response = await fetch(KAG_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ image_url: img })
+                });
+
+                const data = await response.json();
+                status.innerText = "Kaggle response: " + data.message;
+            } catch (err) {
+                status.innerText = "❌ Error: Kaggle is offline or URL changed.";
+            }
+        }
+    </script>
+</body>
+</html>
