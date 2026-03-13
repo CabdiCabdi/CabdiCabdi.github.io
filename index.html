@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo Animator – Animate &amp; Export MP4</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d14;
+      --surface: #16161f;
+      --surface2: #1e1e2c;
+      --border: #2a2a3d;
+      --accent: #7c6ff7;
+      --accent-hover: #9d98ff;
+      --success: #34d399;
+      --danger: #f87171;
+      --text: #e4e4f0;
+      --text-muted: #7878a0;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), #c084fc);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .header-text h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.02em; }
+    .header-text p  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+    main {
+      flex: 1;
+      display: flex;
+      gap: 24px;
+      padding: 24px 32px;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── Left column ── */
+    .col-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 0;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+    }
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .drop-icon { font-size: 2.5rem; }
+    .drop-zone h2 { font-size: 1rem; font-weight: 600; }
+    .drop-zone p  { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* URL input */
+    .url-row {
+      display: flex;
+      gap: 8px;
+    }
+    .url-row input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .url-row input:focus { border-color: var(--accent); }
+    .url-row input::placeholder { color: var(--text-muted); }
+
+    /* Card / section wrapper */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    /* Effect grid */
+    .effect-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 8px;
+    }
+    .effect-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 6px;
+      color: var(--text);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      text-align: center;
+    }
+    .effect-btn .eff-icon { font-size: 1.3rem; }
+    .effect-btn:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface2)); }
+    .effect-btn.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface2)); color: var(--accent-hover); }
+
+    /* Sliders */
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .control-row:last-child { margin-bottom: 0; }
+    .control-label { font-size: 0.82rem; width: 90px; flex-shrink: 0; color: var(--text-muted); }
+    .control-row input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .control-val {
+      font-size: 0.82rem;
+      width: 44px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .control-row select {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: var(--text);
+      font-size: 0.83rem;
+      outline: none;
+    }
+
+    /* Buttons */
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-success { background: var(--success); color: #052e16; }
+    .btn-success:hover:not(:disabled) { opacity: 0.9; }
+    .btn-danger  { background: var(--danger);  color: #fff; }
+    .btn-danger:hover:not(:disabled)  { opacity: 0.9; }
+    .btn-ghost {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-hover); }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Right column – preview ── */
+    .col-right {
+      width: 420px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .preview-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      aspect-ratio: 16/9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .preview-wrap canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .preview-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+    .preview-placeholder span { font-size: 2rem; }
+
+    /* Progress bar */
+    .progress-wrap {
+      background: var(--surface2);
+      border-radius: 6px;
+      height: 6px;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #c084fc);
+      border-radius: 6px;
+      transition: width 0.2s;
+      width: 0%;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 0.88rem;
+      box-shadow: var(--shadow);
+      transition: transform 0.3s;
+      z-index: 99;
+      white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+    .badge-idle    { background: var(--surface2); color: var(--text-muted); }
+    .badge-running { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent-hover); }
+    .badge-done    { background: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
+    .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .badge-running .badge-dot { animation: pulse-dot 1s infinite; }
+    @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* Download area */
+    #download-area {
+      display: none;
+    }
+    #download-area video {
+      width: 100%;
+      border-radius: 8px;
+      background: #000;
+      display: block;
+    }
+
+    /* Responsive */
+    @media (max-width: 860px) {
+      main { flex-direction: column; padding: 16px; }
+      .col-right { width: 100%; }
+    }
+    @media (max-width: 540px) {
+      header { padding: 14px 16px; }
+      main { padding: 12px; gap: 16px; }
+      .effect-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🎬</div>
+  <div class="header-text">
+    <h1>Photo Animator</h1>
+    <p>Upload a photo → pick an effect → export as MP4 / WebM</p>
+  </div>
+</header>
+
+<main>
+  <!-- ── Left column ── -->
+  <div class="col-left">
+
+    <!-- Drop zone -->
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="image/*" />
+      <div class="drop-icon">🖼️</div>
+      <h2>Drop a photo here</h2>
+      <p>or click to browse your files</p>
+    </div>
+
+    <!-- URL loader -->
+    <div class="url-row">
+      <input type="text" id="urlInput" placeholder="Or paste an image URL and press Load…" />
+      <button class="btn btn-ghost" id="loadUrlBtn">Load URL</button>
+    </div>
+
+    <!-- Effect picker -->
+    <div class="card">
+      <div class="card-title">Animation Effect</div>
+      <div class="effect-grid" id="effectGrid">
+        <button class="effect-btn active" data-effect="kenburns">
+          <span class="eff-icon">🎥</span>Ken Burns
+        </button>
+        <button class="effect-btn" data-effect="zoom-in">
+          <span class="eff-icon">🔍</span>Zoom In
+        </button>
+        <button class="effect-btn" data-effect="zoom-out">
+          <span class="eff-icon">🔭</span>Zoom Out
+        </button>
+        <button class="effect-btn" data-effect="pan-left">
+          <span class="eff-icon">⬅️</span>Pan Left
+        </button>
+        <button class="effect-btn" data-effect="pan-right">
+          <span class="eff-icon">➡️</span>Pan Right
+        </button>
+        <button class="effect-btn" data-effect="pan-up">
+          <span class="eff-icon">⬆️</span>Pan Up
+        </button>
+        <button class="effect-btn" data-effect="pan-down">
+          <span class="eff-icon">⬇️</span>Pan Down
+        </button>
+        <button class="effect-btn" data-effect="rotate-cw">
+          <span class="eff-icon">🔄</span>Rotate CW
+        </button>
+        <button class="effect-btn" data-effect="rotate-ccw">
+          <span class="eff-icon">🔃</span>Rotate CCW
+        </button>
+        <button class="effect-btn" data-effect="pulse">
+          <span class="eff-icon">💓</span>Pulse
+        </button>
+        <button class="effect-btn" data-effect="shake">
+          <span class="eff-icon">📳</span>Shake
+        </button>
+        <button class="effect-btn" data-effect="fade">
+          <span class="eff-icon">🌫️</span>Fade In/Out
+        </button>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="card">
+      <div class="card-title">Settings</div>
+
+      <div class="control-row">
+        <span class="control-label">Duration</span>
+        <input type="range" id="durRange" min="2" max="20" value="6" step="1" />
+        <span class="control-val" id="durVal">6 s</span>
+      </div>
+
+      <div class="control-row">
+        <span class="control-label">Intensity</span>
+        <input type="range" id="intensityRange" min="1" max="10" value="5" step="1" />
+        <span class="control-val" id="intensityVal">5</span>
+      </div>
+
+      <div class="control-row">
+        <span class="control-label">Resolution</span>
+        <select id="resSelect">
+          <option value="640x360">360p (640×360)</option>
+          <option value="1280x720" selected>720p (1280×720)</option>
+          <option value="1920x1080">1080p (1920×1080)</option>
+        </select>
+      </div>
+
+      <div class="control-row">
+        <span class="control-label">Frame Rate</span>
+        <select id="fpsSelect">
+          <option value="24">24 fps</option>
+          <option value="30" selected>30 fps</option>
+          <option value="60">60 fps</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-row">
+      <button class="btn btn-primary" id="previewBtn" disabled>▶ Preview</button>
+      <button class="btn btn-success" id="recordBtn" disabled>⏺ Record Video</button>
+      <button class="btn btn-danger"  id="stopBtn"   disabled>⏹ Stop</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+  </div>
+
+  <!-- ── Right column ── -->
+  <div class="col-right">
+
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <div class="card-title" style="margin:0;">Live Preview</div>
+      <span class="status-badge badge-idle" id="statusBadge">
+        <span class="badge-dot"></span>Idle
+      </span>
+    </div>
+
+    <div class="preview-wrap">
+      <canvas id="canvas"></canvas>
+      <div class="preview-placeholder" id="previewPlaceholder">
+        <span>🖼️</span>
+        <p>Upload a photo to begin</p>
+      </div>
+    </div>
+
+    <div id="download-area">
+      <div class="card-title">Your Video</div>
+      <video id="videoPlayer" controls playsinline></video>
+      <div class="action-row" style="margin-top:10px;">
+        <a class="btn btn-success" id="downloadBtn" download="animated-photo.mp4">⬇ Download</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   State
+═══════════════════════════════════════════════════ */
+let img = null;
+let selectedEffect = 'kenburns';
+let animRaf = null;
+let mediaRec = null;
+let recChunks = [];
+let recTimer = null;
+let isRecording = false;
+let isPreviewing = false;
+let startTime = 0;
+
+const canvas    = document.getElementById('canvas');
+const ctx       = canvas.getContext('2d');
+const previewBtn = document.getElementById('previewBtn');
+const recordBtn  = document.getElementById('recordBtn');
+const stopBtn    = document.getElementById('stopBtn');
+const durRange   = document.getElementById('durRange');
+const durVal     = document.getElementById('durVal');
+const intensityRange = document.getElementById('intensityRange');
+const intensityVal   = document.getElementById('intensityVal');
+const resSelect  = document.getElementById('resSelect');
+const fpsSelect  = document.getElementById('fpsSelect');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar  = document.getElementById('progressBar');
+const statusBadge  = document.getElementById('statusBadge');
+const downloadArea = document.getElementById('download-area');
+const downloadBtn  = document.getElementById('downloadBtn');
+const videoPlayer  = document.getElementById('videoPlayer');
+const placeholder  = document.getElementById('previewPlaceholder');
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const urlInput  = document.getElementById('urlInput');
+const loadUrlBtn = document.getElementById('loadUrlBtn');
+
+/* ═══════════════════════════════════════════════════
+   Utilities
+═══════════════════════════════════════════════════ */
+function showToast(msg, dur = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function setStatus(state, label) {
+  statusBadge.className = 'status-badge badge-' + state;
+  statusBadge.innerHTML = `<span class="badge-dot"></span>${label}`;
+}
+
+function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function getDuration()  { return parseInt(durRange.value, 10); }
+function getIntensity() { return parseInt(intensityRange.value, 10) / 10; } // 0.1–1.0
+function getResolution() {
+  const [w, h] = resSelect.value.split('x').map(Number);
+  return { w, h };
+}
+function getFps() { return parseInt(fpsSelect.value, 10); }
+
+/* ═══════════════════════════════════════════════════
+   Image loading
+═══════════════════════════════════════════════════ */
+function loadImage(src, crossOrigin) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    if (crossOrigin) image.crossOrigin = 'anonymous';
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+function onImageLoaded(image) {
+  img = image;
+  const { w, h } = getResolution();
+  canvas.width  = w;
+  canvas.height = h;
+  drawFrame(0);
+  placeholder.style.display = 'none';
+  previewBtn.disabled = false;
+  recordBtn.disabled  = false;
+  showToast('✅ Photo loaded — choose an effect and hit Preview or Record!');
+}
+
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    showToast('❌ Please select an image file.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const image = await loadImage(e.target.result, false);
+      onImageLoaded(image);
+    } catch {
+      showToast('❌ Could not load image.');
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function loadFromUrl(url) {
+  url = url.trim();
+  if (!url) { showToast('❌ Please enter a URL.'); return; }
+  showToast('⏳ Loading image…');
+  // Try CORS-anonymous first so canvas stays clean for recording
+  try {
+    const image = await loadImage(url, true);
+    // Test canvas taint
+    canvas.width = 4; canvas.height = 4;
+    ctx.drawImage(image, 0, 0);
+    ctx.getImageData(0, 0, 1, 1); // throws SecurityError if tainted
+    onImageLoaded(image);
+    return;
+  } catch { /* CORS or taint – fall back */ }
+  // Fallback: no crossOrigin (preview-only; recording will be blocked)
+  try {
+    const image = await loadImage(url, false);
+    onImageLoaded(image);
+    showToast('⚠️ CORS restricted – preview only. Download the photo and re-upload for recording.');
+  } catch {
+    showToast('❌ Could not load image from URL.');
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   Animation engine
+═══════════════════════════════════════════════════ */
+/**
+ * Compute {sx, sy, sw, sh, rotate, alpha} for the given normalised time t ∈ [0,1].
+ * sx,sy,sw,sh are in image-coordinate space (source crop).
+ * rotate is in radians. alpha in [0,1].
+ */
+function computeTransform(t) {
+  const iw = img.naturalWidth  || img.width;
+  const ih = img.naturalHeight || img.height;
+  const intensity = getIntensity();
+
+  // default = full image, no rotation, full opacity
+  let sx = 0, sy = 0, sw = iw, sh = ih;
+  let rotate = 0, alpha = 1;
+
+  const ease = easeInOut(t);
+
+  switch (selectedEffect) {
+    case 'zoom-in': {
+      const scale = lerp(1, 1 + intensity * 0.5, ease);
+      sw = iw / scale; sh = ih / scale;
+      sx = (iw - sw) / 2; sy = (ih - sh) / 2;
+      break;
+    }
+    case 'zoom-out': {
+      const scale = lerp(1 + intensity * 0.5, 1, ease);
+      sw = iw / scale; sh = ih / scale;
+      sx = (iw - sw) / 2; sy = (ih - sh) / 2;
+      break;
+    }
+    case 'kenburns': {
+      // Zoom + diagonal pan
+      const scale = lerp(1 + intensity * 0.15, 1 + intensity * 0.35, ease);
+      sw = iw / scale; sh = ih / scale;
+      const maxPanX = (iw - sw) * 0.5;
+      const maxPanY = (ih - sh) * 0.5;
+      sx = lerp(-maxPanX, maxPanX, ease) + (iw - sw) / 2;
+      sy = lerp(-maxPanY, maxPanY, ease) + (ih - sh) / 2;
+      sx = Math.max(0, Math.min(iw - sw, sx));
+      sy = Math.max(0, Math.min(ih - sh, sy));
+      break;
+    }
+    case 'pan-left': {
+      const pan = intensity * 0.3 * iw * ease;
+      sx = pan; sy = 0; sw = iw - pan; sh = ih;
+      break;
+    }
+    case 'pan-right': {
+      const pan = intensity * 0.3 * iw * ease;
+      sx = 0; sy = 0; sw = iw - pan; sh = ih;
+      break;
+    }
+    case 'pan-up': {
+      const pan = intensity * 0.3 * ih * ease;
+      sx = 0; sy = pan; sw = iw; sh = ih - pan;
+      break;
+    }
+    case 'pan-down': {
+      const pan = intensity * 0.3 * ih * ease;
+      sx = 0; sy = 0; sw = iw; sh = ih - pan;
+      break;
+    }
+    case 'rotate-cw':  { rotate =  ease * intensity * Math.PI * 0.4; break; }
+    case 'rotate-ccw': { rotate = -ease * intensity * Math.PI * 0.4; break; }
+    case 'pulse': {
+      // 3–7 beats per animation cycle depending on intensity
+      const pulseCycles = 3 + Math.round(intensity * 4);
+      const beat = Math.sin(t * Math.PI * 2 * pulseCycles);
+      const scale = 1 + beat * intensity * 0.08;
+      sw = iw / scale; sh = ih / scale;
+      sx = (iw - sw) / 2; sy = (ih - sh) / 2;
+      break;
+    }
+    case 'shake': {
+      // Crop 5% off each edge so shaking doesn't show empty canvas borders
+      const shakeCropMargin = 0.05;
+      const shakeAmp = intensity * 20; // max pixel shift in source coords
+      sx = (iw * shakeCropMargin) + Math.sin(t * Math.PI * 30) * shakeAmp * (iw / canvas.width);
+      sy = (ih * shakeCropMargin) + Math.cos(t * Math.PI * 27) * shakeAmp * (ih / canvas.height);
+      sw = iw * (1 - shakeCropMargin * 2);
+      sh = ih * (1 - shakeCropMargin * 2);
+      break;
+    }
+    case 'fade': {
+      alpha = t < 0.5 ? easeInOut(t * 2) : easeInOut((1 - t) * 2);
+      break;
+    }
+  }
+
+  return { sx, sy, sw, sh, rotate, alpha };
+}
+
+function drawFrame(t /* normalised 0..1 */) {
+  if (!img) return;
+  const { w, h } = { w: canvas.width, h: canvas.height };
+  const { sx, sy, sw, sh, rotate, alpha } = computeTransform(t);
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.save();
+
+  ctx.globalAlpha = alpha;
+
+  if (rotate !== 0) {
+    ctx.translate(w / 2, h / 2);
+    ctx.rotate(rotate);
+    ctx.translate(-w / 2, -h / 2);
+  }
+
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════════════════
+   Preview loop
+═══════════════════════════════════════════════════ */
+function startPreview() {
+  if (!img) return;
+  stopAnimation();
+  isPreviewing = true;
+  setStatus('running', 'Previewing');
+  previewBtn.disabled = true;
+  recordBtn.disabled  = false;
+  stopBtn.disabled    = false;
+
+  const duration = getDuration() * 1000;
+  startTime = performance.now();
+
+  function loop(now) {
+    const elapsed = now - startTime;
+    const t = (elapsed % duration) / duration;
+    drawFrame(t);
+    animRaf = requestAnimationFrame(loop);
+  }
+  animRaf = requestAnimationFrame(loop);
+}
+
+/* ═══════════════════════════════════════════════════
+   Recording
+═══════════════════════════════════════════════════ */
+function startRecording() {
+  if (!img) return;
+  stopAnimation();
+  isRecording = true;
+  setStatus('running', 'Recording…');
+
+  const { w, h } = getResolution();
+  canvas.width  = w;
+  canvas.height = h;
+
+  const fps = getFps();
+  const durationSec = getDuration();
+  const totalFrames = fps * durationSec;
+
+  downloadArea.style.display = 'none';
+  progressWrap.style.display = 'block';
+  progressBar.style.width = '0%';
+
+  previewBtn.disabled = true;
+  recordBtn.disabled  = true;
+  stopBtn.disabled    = false;
+
+  const mimeTypes = [
+    'video/mp4; codecs=avc1',
+    'video/mp4',
+    'video/webm; codecs=vp9',
+    'video/webm; codecs=vp8',
+    'video/webm',
+  ];
+  const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+  const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+
+  // Scale bitrate to selected resolution (approx: 2 Mbps at 360p, 5 Mbps at 720p, 8 Mbps at 1080p)
+  const bitrateByRes = { '640x360': 2_000_000, '1280x720': 5_000_000, '1920x1080': 8_000_000 };
+  const videoBitsPerSecond = bitrateByRes[resSelect.value] || 5_000_000;
+
+  const stream = canvas.captureStream(fps);
+  recChunks = [];
+  try {
+    mediaRec = new MediaRecorder(stream, { mimeType, videoBitsPerSecond });
+  } catch {
+    mediaRec = new MediaRecorder(stream);
+  }
+
+  mediaRec.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
+  mediaRec.onstop = () => finishRecording(mimeType, ext);
+
+  mediaRec.start();
+
+  // Drive frames at exact timing using setTimeout-based scheduler
+  let frame = 0;
+  const frameMs = 1000 / fps;
+
+  function scheduleFrame() {
+    if (!isRecording || frame >= totalFrames) {
+      stopRecorder();
+      return;
+    }
+    const t = Math.min(frame / totalFrames, 1);
+    drawFrame(t);
+    progressBar.style.width = (t * 100).toFixed(1) + '%';
+    frame++;
+    recTimer = setTimeout(scheduleFrame, frameMs);
+  }
+  scheduleFrame();
+}
+
+function stopRecorder() {
+  if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop();
+}
+
+function stopAnimation() {
+  if (animRaf) { cancelAnimationFrame(animRaf); animRaf = null; }
+  if (recTimer) { clearTimeout(recTimer); recTimer = null; }
+  isPreviewing = false;
+  isRecording  = false;
+}
+
+function finishRecording(mimeType, ext) {
+  progressBar.style.width = '100%';
+  setTimeout(() => { progressWrap.style.display = 'none'; }, 600);
+
+  const blob = new Blob(recChunks, { type: mimeType });
+  const url  = URL.createObjectURL(blob);
+
+  videoPlayer.src = url;
+  downloadBtn.href = url;
+  downloadBtn.download = `animated-photo.${ext}`;
+  downloadArea.style.display = 'block';
+
+  setStatus('done', `Done (${ext.toUpperCase()})`);
+  previewBtn.disabled = false;
+  recordBtn.disabled  = false;
+  stopBtn.disabled    = true;
+
+  showToast(`✅ Video ready! Click Download to save as .${ext}`);
+}
+
+function handleStop() {
+  stopAnimation();
+  stopRecorder();
+  setStatus('idle', 'Idle');
+  previewBtn.disabled = !img;
+  recordBtn.disabled  = !img;
+  stopBtn.disabled    = true;
+  progressWrap.style.display = 'none';
+}
+
+/* ═══════════════════════════════════════════════════
+   Event wiring
+═══════════════════════════════════════════════════ */
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  handleFile(e.dataTransfer.files[0]);
+});
+
+loadUrlBtn.addEventListener('click', () => loadFromUrl(urlInput.value));
+urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadFromUrl(urlInput.value); });
+
+function getCurrentPreviewTime() {
+  const elapsed = performance.now() - startTime;
+  return (elapsed / (getDuration() * 1000)) % 1;
+}
+
+document.getElementById('effectGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.effect-btn');
+  if (!btn) return;
+  document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedEffect = btn.dataset.effect;
+  if (img && !isRecording) drawFrame(isPreviewing ? getCurrentPreviewTime() : 0);
+});
+
+durRange.addEventListener('input', () => { durVal.textContent = durRange.value + ' s'; });
+intensityRange.addEventListener('input', () => { intensityVal.textContent = intensityRange.value; });
+
+resSelect.addEventListener('change', () => {
+  if (!img) return;
+  const { w, h } = getResolution();
+  canvas.width = w; canvas.height = h;
+  if (!isPreviewing && !isRecording) drawFrame(0);
+});
+
+previewBtn.addEventListener('click', startPreview);
+recordBtn.addEventListener('click', startRecording);
+stopBtn.addEventListener('click', handleStop);
+
+// Initial canvas size placeholder
+canvas.width  = 1280;
+canvas.height = 720;
+</script>
+</body>
+</html>
