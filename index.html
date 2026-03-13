@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image to Video – Animate &amp; Export</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #242432;
+      --border: #2e2e42;
+      --accent: #6c63ff;
+      --accent-hover: #8a83ff;
+      --danger: #ff4f6a;
+      --text: #e8e8f0;
+      --text-muted: #8888aa;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header .logo {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    header h1 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      gap: 24px;
+      padding: 24px 32px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── Left panel ── */
+    .panel-left {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: #1f1f2e;
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-zone .icon { font-size: 48px; line-height: 1; }
+
+    .drop-zone .hint {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 0 16px;
+    }
+
+    .drop-zone .hint strong { color: var(--accent); }
+
+    #preview-wrap {
+      display: none;
+      width: 100%;
+      position: relative;
+    }
+
+    #preview-img {
+      width: 100%;
+      border-radius: calc(var(--radius) - 2px);
+      display: block;
+      max-height: 300px;
+      object-fit: contain;
+    }
+
+    .change-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.65);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .change-btn:hover { background: rgba(0,0,0,0.85); }
+
+    /* Settings */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      margin-bottom: 6px;
+    }
+
+    .field label span { color: var(--accent); font-weight: 600; }
+
+    .field select, .field input[type="range"] {
+      width: 100%;
+    }
+
+    .field select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238888aa' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    .field select:focus { border-color: var(--accent); }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover { background: var(--accent-hover); }
+
+    /* ── Right panel ── */
+    .panel-right {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 380px;
+      flex-shrink: 0;
+    }
+
+    /* Canvas preview */
+    .preview-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .preview-card .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    .status-dot.active { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+    .status-dot.recording { background: var(--danger); box-shadow: 0 0 6px var(--danger); animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    #canvas-wrap {
+      position: relative;
+      background: #000;
+      aspect-ratio: 16/9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .canvas-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .canvas-placeholder .big-icon { font-size: 40px; }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-danger:hover:not(:disabled) { background: #ff6b82; }
+
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover:not(:disabled) { background: var(--border); }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-download {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+    }
+
+    /* Progress */
+    .progress-wrap {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .progress-wrap.visible { display: flex; }
+
+    .progress-bar-bg {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .progress-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* Output video */
+    #output-section {
+      display: none;
+    }
+
+    #output-video {
+      width: 100%;
+      border-radius: calc(var(--radius) - 2px);
+      background: #000;
+      display: block;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 0.875rem;
+      transition: transform 0.3s ease;
+      z-index: 999;
+      white-space: nowrap;
+    }
+
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* URL loader */
+    .url-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      outline: none;
+      min-width: 0;
+    }
+
+    .url-input:focus { border-color: var(--accent); }
+    .url-input::placeholder { color: var(--text-muted); }
+
+    .url-load-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .url-load-btn:hover { background: var(--accent-hover); }
+
+    /* Featured photo banner */
+    .banner {
+      background: linear-gradient(135deg, #1a1a35, #1f1a30);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.875rem;
+    }
+
+    .banner-icon { font-size: 24px; flex-shrink: 0; }
+
+    .banner p { color: var(--text-muted); margin-top: 2px; font-size: 0.8rem; }
+
+    /* CORS warning */
+    .cors-warn {
+      background: #1e1208;
+      border: 1px solid #7a4f00;
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 0.82rem;
+      color: #f0c060;
+      display: none;
+    }
+
+    .cors-warn strong { display: block; margin-bottom: 4px; color: #ffd080; }
+
+    /* CSS animation preview (CORS fallback) */
+    #css-anim-wrap {
+      display: none;
+      position: relative;
+      overflow: hidden;
+      border-radius: calc(var(--radius) - 2px);
+      background: #000;
+      aspect-ratio: 16/9;
+    }
+
+    #css-anim-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform-origin: center center;
+    }
+
+    .anim-ken-burns #css-anim-img {
+      animation: kenBurnsCSS 6s ease-in-out infinite alternate;
+    }
+
+    @keyframes kenBurnsCSS {
+      from { transform: scale(1)    translate(0, 0); }
+      to   { transform: scale(1.18) translate(-3%, -3%); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      main { flex-direction: column; padding: 16px; }
+      .panel-right { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🎞</div>
+  <div>
+    <h1>Image to Video</h1>
+    <p>Animate any image and export as an MP4 or WebM video</p>
+  </div>
+</header>
+
+<main>
+  <!-- Left panel -->
+  <div class="panel-left">
+
+    <!-- Featured photo banner -->
+    <div class="banner" id="featured-banner">
+      <div class="banner-icon">🌟</div>
+      <div>
+        <strong>Photo pre-loaded from your request</strong>
+        <p>Choose an effect below, then click <strong>▶ Preview</strong> or <strong>⏺ Record</strong> to export your video.</p>
+      </div>
+    </div>
+
+    <!-- Upload -->
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" id="file-input" accept="image/*" />
+      <div id="drop-content">
+        <div class="icon">🖼️</div>
+        <div class="hint"><strong>Click to upload</strong> or drag &amp; drop<br/>PNG, JPG, WEBP, GIF…</div>
+        <div class="url-row">
+          <input class="url-input" id="url-input" type="url" placeholder="…or paste an image URL" />
+          <button class="url-load-btn" id="url-load-btn" type="button">Load URL</button>
+        </div>
+      </div>
+      <div id="preview-wrap">
+        <img id="preview-img" alt="Uploaded image preview" />
+        <button class="change-btn" id="change-btn">Change image</button>
+      </div>
+    </div>
+
+    <!-- CORS warning + CSS animation fallback -->
+    <div class="cors-warn" id="cors-warn">
+      <strong>⚠️ Cross-origin restriction – video export unavailable for this URL</strong>
+      The browser blocked canvas access to this image (CORS policy). You can still enjoy the live CSS animation below.
+      To export a video, <strong>save the image to your device first</strong>, then upload it using the drop zone above.
+    </div>
+
+    <!-- CSS animation (shown when CORS blocks canvas) -->
+    <div id="css-anim-wrap" class="anim-ken-burns">
+      <img id="css-anim-img" alt="Animated preview" />
+    </div>
+
+    <!-- Animation settings -->
+    <div class="card">
+      <h2>Animation</h2>
+
+      <div class="field">
+        <label>Effect <span id="effect-label"></span></label>
+        <select id="effect">
+          <option value="zoom-in">Zoom In</option>
+          <option value="zoom-out">Zoom Out</option>
+          <option value="pan-right">Pan Right</option>
+          <option value="pan-left">Pan Left</option>
+          <option value="pan-up">Pan Up</option>
+          <option value="pan-down">Pan Down</option>
+          <option value="ken-burns">Ken Burns (Zoom + Pan)</option>
+          <option value="rotate-cw">Rotate Clockwise</option>
+          <option value="rotate-ccw">Rotate Counter-Clockwise</option>
+          <option value="pulse">Pulse (Scale)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Duration <span id="duration-label">4 s</span></label>
+        <input type="range" id="duration" min="2" max="20" value="4" step="1" />
+      </div>
+
+      <div class="field">
+        <label>Intensity <span id="intensity-label">50%</span></label>
+        <input type="range" id="intensity" min="10" max="100" value="50" step="5" />
+      </div>
+
+      <div class="field">
+        <label>Output Resolution <span id="res-label"></span></label>
+        <select id="resolution">
+          <option value="1280x720">1280 × 720 (HD)</option>
+          <option value="1920x1080">1920 × 1080 (Full HD)</option>
+          <option value="854x480">854 × 480 (480p)</option>
+          <option value="640x360">640 × 360 (360p)</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right panel -->
+  <div class="panel-right">
+
+    <!-- Canvas preview -->
+    <div class="preview-card">
+      <div class="preview-header">
+        <span><span class="status-dot" id="status-dot"></span><span id="status-text">No image loaded</span></span>
+        <span id="timer-display" style="color:var(--text-muted);font-size:0.8rem;"></span>
+      </div>
+      <div id="canvas-wrap">
+        <canvas id="canvas"></canvas>
+        <div class="canvas-placeholder" id="canvas-placeholder">
+          <div class="big-icon">▶️</div>
+          <div>Preview will appear here</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-preview" disabled>▶ Preview</button>
+      <button class="btn btn-danger" id="btn-record" disabled>⏺ Record</button>
+      <button class="btn btn-ghost" id="btn-stop" disabled>⏹ Stop</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar"></div></div>
+      <div class="progress-label" id="progress-label">Recording…</div>
+    </div>
+
+    <!-- Output -->
+    <div id="output-section" class="card">
+      <h2>Output Video</h2>
+      <video id="output-video" controls></video>
+      <br/>
+      <button class="btn btn-primary btn-download" id="btn-download">⬇ Download MP4</button>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Elements ─────────────────────────────────────────────────────
+  const dropZone      = document.getElementById('drop-zone');
+  const fileInput     = document.getElementById('file-input');
+  const dropContent   = document.getElementById('drop-content');
+  const previewWrap   = document.getElementById('preview-wrap');
+  const previewImg    = document.getElementById('preview-img');
+  const changeBtn     = document.getElementById('change-btn');
+  const canvas        = document.getElementById('canvas');
+  const ctx           = canvas.getContext('2d');
+  const canvasPlaceholder = document.getElementById('canvas-placeholder');
+  const btnPreview    = document.getElementById('btn-preview');
+  const btnRecord     = document.getElementById('btn-record');
+  const btnStop       = document.getElementById('btn-stop');
+  const btnDownload   = document.getElementById('btn-download');
+  const outputSection = document.getElementById('output-section');
+  const outputVideo   = document.getElementById('output-video');
+  const progressWrap  = document.getElementById('progress-wrap');
+  const progressBar   = document.getElementById('progress-bar');
+  const progressLabel = document.getElementById('progress-label');
+  const statusDot     = document.getElementById('status-dot');
+  const statusText    = document.getElementById('status-text');
+  const timerDisplay  = document.getElementById('timer-display');
+  const effectSelect  = document.getElementById('effect');
+  const durationRange = document.getElementById('duration');
+  const intensityRange= document.getElementById('intensity');
+  const resSelect     = document.getElementById('resolution');
+  const durationLabel = document.getElementById('duration-label');
+  const intensityLabel= document.getElementById('intensity-label');
+  const toast         = document.getElementById('toast');
+  const urlInput      = document.getElementById('url-input');
+  const urlLoadBtn    = document.getElementById('url-load-btn');
+  const corsWarn      = document.getElementById('cors-warn');
+  const cssAnimWrap   = document.getElementById('css-anim-wrap');
+  const cssAnimImg    = document.getElementById('css-anim-img');
+  const featuredBanner= document.getElementById('featured-banner');
+
+  // The specific photo from the GitHub issue
+  const FEATURED_PHOTO_URL = 'https://github.com/user-attachments/assets/13e80eb4-ae90-418e-bad8-4e3ce7d91b07';
+
+  // ── State ─────────────────────────────────────────────────────────
+  let img             = null;
+  let animFrameId     = null;
+  let startTime       = null;
+  let mediaRecorder   = null;
+  let recordedChunks  = [];
+  let isRecording     = false;
+  let isPreviewLoop   = false;
+  let recordedBlob    = null;
+  let timerInterval   = null;
+  let corsBlocked     = false; // true when image loaded without crossOrigin (no canvas export)
+
+  // ── Constants ─────────────────────────────────────────────────────
+  const PULSE_CYCLES = 4; // number of scale oscillations over the animation
+
+  // ── Label updates ─────────────────────────────────────────────────
+  durationRange.addEventListener('input', () => {
+    durationLabel.textContent = durationRange.value + ' s';
+  });
+  intensityRange.addEventListener('input', () => {
+    intensityLabel.textContent = intensityRange.value + '%';
+  });
+  durationLabel.textContent = durationRange.value + ' s';
+  intensityLabel.textContent = intensityRange.value + '%';
+
+  // ── File handling ─────────────────────────────────────────────────
+  function loadFile(file) {
+    if (!file || !file.type.startsWith('image/')) {
+      showToast('Please upload a valid image file.');
+      return;
+    }
+    corsBlocked = false;
+    corsWarn.style.display = 'none';
+    cssAnimWrap.style.display = 'none';
+    featuredBanner.style.display = 'none';
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = function () {
+      img = image;
+      previewImg.src = url;
+      // Revoke after the preview image has also loaded, ensuring both uses are done
+      previewImg.onload = () => URL.revokeObjectURL(url);
+      dropContent.style.display = 'none';
+      previewWrap.style.display = 'block';
+      setStatus('ready', 'Image loaded – ready');
+      btnPreview.disabled = false;
+      btnRecord.disabled = false;
+      canvasPlaceholder.style.display = 'none';
+      renderFrame(0, 1); // draw initial frame
+    };
+    image.src = url;
+  }
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) loadFile(fileInput.files[0]);
+  });
+
+  changeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.value = '';
+    fileInput.click();
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) loadFile(file);
+  });
+
+  // ── URL loading ───────────────────────────────────────────────────
+  /**
+   * Load an image from an external URL.
+   * First try with crossOrigin = 'anonymous' (allows canvas export if CORS headers present).
+   * If that fails, fall back to loading without crossOrigin – canvas will be tainted
+   * and recording will be unavailable, but a CSS animation preview is shown instead.
+   */
+  function loadFromUrl(url) {
+    if (!url || !url.trim()) { showToast('Please enter a valid image URL.'); return; }
+    url = url.trim();
+    corsBlocked = false;
+    corsWarn.style.display = 'none';
+    cssAnimWrap.style.display = 'none';
+
+    setStatus('active', 'Loading image…');
+
+    const tryLoad = (withCors) => {
+      const image = new Image();
+      if (withCors) image.crossOrigin = 'anonymous';
+
+      image.onload = function () {
+        if (withCors) {
+          // Verify canvas access is not tainted by drawing a test pixel
+          const testCanvas = document.createElement('canvas');
+          testCanvas.width = 1; testCanvas.height = 1;
+          testCanvas.getContext('2d').drawImage(image, 0, 0, 1, 1);
+          try {
+            testCanvas.toDataURL(); // throws SecurityError if tainted
+            // Success – full canvas access available
+            corsBlocked = false;
+            finishUrlLoad(image, url, true);
+          } catch (err) {
+            // Tainted despite crossOrigin flag (server didn't send CORS headers)
+            console.debug('Canvas CORS test failed:', err);
+            tryLoad(false);
+          }
+        } else {
+          // Loaded without crossOrigin – canvas tainted, show CSS animation only
+          corsBlocked = true;
+          finishUrlLoad(image, url, false);
+        }
+      };
+
+      image.onerror = function () {
+        if (withCors) {
+          // crossOrigin might have caused the load to fail (server rejects it) – retry without
+          tryLoad(false);
+        } else {
+          setStatus('ready', 'No image loaded');
+          showToast('❌ Could not load image from URL. Check the URL and try again.');
+        }
+      };
+
+      image.src = url;
+    };
+
+    tryLoad(true);
+  }
+
+  function finishUrlLoad(image, url, canExport) {
+    img = image;
+    previewImg.src = url;
+    dropContent.style.display = 'none';
+    previewWrap.style.display = 'block';
+    canvasPlaceholder.style.display = 'none';
+
+    if (canExport) {
+      setStatus('ready', 'Image loaded – ready');
+      btnPreview.disabled = false;
+      btnRecord.disabled = false;
+      renderFrame(0, 1);
+    } else {
+      // CORS blocked – show CSS animation, disable recording
+      setStatus('ready', 'Image loaded (preview only)');
+      btnPreview.disabled = false;
+      btnRecord.disabled = true;
+      corsWarn.style.display = 'block';
+      cssAnimImg.src = url;
+      cssAnimWrap.style.display = 'block';
+      showToast('⚠️ CORS restriction: video export unavailable for this URL. See instructions below.');
+    }
+  }
+
+  urlLoadBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    loadFromUrl(urlInput.value);
+  });
+
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.stopPropagation(); loadFromUrl(urlInput.value); }
+  });
+
+  // Prevent file-input click when interacting with the URL row
+  urlInput.addEventListener('click', (e) => e.stopPropagation());
+
+  // ── Auto-load featured photo on startup ───────────────────────────
+  // Pre-set Ken Burns effect (best for photo animation) and load the photo
+  effectSelect.value = 'ken-burns';
+  loadFromUrl(FEATURED_PHOTO_URL);
+
+  // ── Canvas sizing ─────────────────────────────────────────────────
+  function applyResolution() {
+    const [w, h] = resSelect.value.split('x').map(Number);
+    canvas.width  = w;
+    canvas.height = h;
+  }
+
+  resSelect.addEventListener('change', () => {
+    applyResolution();
+    if (img) renderFrame(0, 1);
+  });
+
+  applyResolution();
+
+  // ── Animation renderer ────────────────────────────────────────────
+  /**
+   * t  : normalised time 0..1
+   * dur: duration for timer (seconds)
+   */
+  function renderFrame(t, dur) {
+    if (!img) return;
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const intensity = intensityRange.value / 100; // 0.1 .. 1
+    const effect = effectSelect.value;
+
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, cw, ch);
+
+    // Compute the "cover" scale so the image fills the canvas
+    const coverScale = Math.max(cw / img.width, ch / img.height);
+    const baseW = img.width  * coverScale;
+    const baseH = img.height * coverScale;
+
+    let scale = 1;
+    let tx = 0, ty = 0;
+    let angle = 0;
+
+    const eased = easeInOut(t);
+
+    switch (effect) {
+      case 'zoom-in':
+        scale = 1 + eased * intensity * 0.5;
+        break;
+      case 'zoom-out':
+        scale = 1 + (1 - eased) * intensity * 0.5;
+        break;
+      case 'pan-right':
+        tx = -eased * intensity * baseW * 0.2;
+        break;
+      case 'pan-left':
+        tx = eased * intensity * baseW * 0.2;
+        break;
+      case 'pan-up':
+        ty = eased * intensity * baseH * 0.2;
+        break;
+      case 'pan-down':
+        ty = -eased * intensity * baseH * 0.2;
+        break;
+      case 'ken-burns':
+        scale = 1 + eased * intensity * 0.4;
+        tx = -eased * intensity * baseW * 0.08;
+        ty = -eased * intensity * baseH * 0.08;
+        break;
+      case 'rotate-cw':
+        angle = eased * intensity * Math.PI * 0.5;
+        break;
+      case 'rotate-ccw':
+        angle = -eased * intensity * Math.PI * 0.5;
+        break;
+      case 'pulse': {
+        scale = 1 + Math.sin(t * Math.PI * 2 * PULSE_CYCLES) * intensity * 0.15;
+        break;
+      }
+    }
+
+    const drawW = baseW * scale;
+    const drawH = baseH * scale;
+    const drawX = (cw - drawW) / 2 + tx;
+    const drawY = (ch - drawH) / 2 + ty;
+
+    ctx.save();
+    if (angle !== 0) {
+      ctx.translate(cw / 2, ch / 2);
+      ctx.rotate(angle);
+      ctx.translate(-cw / 2, -ch / 2);
+    }
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    ctx.restore();
+  }
+
+  function easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  }
+
+  // ── Preview loop ──────────────────────────────────────────────────
+  function startPreview() {
+    stopAnimation();
+    isPreviewLoop = true;
+    setStatus('active', 'Previewing…');
+    btnStop.disabled = false;
+    btnPreview.disabled = true;
+    btnRecord.disabled = true;
+    const dur = Number(durationRange.value);
+    startTime = performance.now();
+
+    function loop(now) {
+      const elapsed = (now - startTime) / 1000;
+      const t = Math.min(elapsed / dur, 1);
+      renderFrame(t, dur);
+      if (t < 1) {
+        animFrameId = requestAnimationFrame(loop);
+      } else {
+        // loop back
+        startTime = performance.now();
+        animFrameId = requestAnimationFrame(loop);
+      }
+    }
+
+    animFrameId = requestAnimationFrame(loop);
+  }
+
+  function stopAnimation() {
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+    isPreviewLoop = false;
+    clearInterval(timerInterval);
+    timerDisplay.textContent = '';
+  }
+
+  // ── Recording ─────────────────────────────────────────────────────
+  function startRecording() {
+    if (!img) return;
+    if (corsBlocked) {
+      showToast('⚠️ Cannot record: image loaded from URL without CORS support. Upload the image file instead.');
+      return;
+    }
+    stopAnimation();
+    recordedChunks = [];
+    recordedBlob   = null;
+    outputSection.style.display = 'none';
+    progressWrap.classList.add('visible');
+    progressBar.style.width = '0%';
+
+    const dur = Number(durationRange.value);
+    const fps = 30;
+    const totalFrames = dur * fps;
+    let frameIdx = 0;
+
+    // Try to get the best supported MIME type
+    const mimeType = getSupportedMimeType();
+    const stream = canvas.captureStream(fps);
+    try {
+      mediaRecorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
+    } catch (err) {
+      console.debug('MediaRecorder instantiation failed:', err);
+      mediaRecorder = new MediaRecorder(stream);
+    }
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = finishRecording;
+    mediaRecorder.start(100);
+
+    isRecording = true;
+    setStatus('recording', 'Recording…');
+    btnRecord.disabled = true;
+    btnPreview.disabled = true;
+    btnStop.disabled = false;
+
+    // Timer countdown
+    let elapsed = 0;
+    timerDisplay.textContent = formatTime(elapsed) + ' / ' + formatTime(dur);
+    timerInterval = setInterval(() => {
+      elapsed += 0.1;
+      timerDisplay.textContent = formatTime(Math.min(elapsed, dur)) + ' / ' + formatTime(dur);
+    }, 100);
+
+    startTime = performance.now();
+
+    function recordLoop(now) {
+      if (!isRecording) return;
+      const t = Math.min(frameIdx / (totalFrames - 1), 1);
+      renderFrame(t, dur);
+      const pct = Math.round((frameIdx / totalFrames) * 100);
+      progressBar.style.width = pct + '%';
+      progressLabel.textContent = 'Recording… ' + pct + '%';
+      frameIdx++;
+      if (frameIdx <= totalFrames) {
+        animFrameId = requestAnimationFrame(recordLoop);
+      } else {
+        stopRecording();
+      }
+    }
+
+    animFrameId = requestAnimationFrame(recordLoop);
+  }
+
+  function stopRecording() {
+    isRecording = false;
+    stopAnimation();
+    clearInterval(timerInterval);
+    timerDisplay.textContent = '';
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    btnStop.disabled = true;
+    btnPreview.disabled = false;
+    btnRecord.disabled = false;
+    setStatus('ready', 'Image loaded – ready');
+    progressLabel.textContent = 'Processing video…';
+  }
+
+  function finishRecording() {
+    const mimeType = mediaRecorder.mimeType || 'video/webm';
+    recordedBlob = new Blob(recordedChunks, { type: mimeType });
+    const url = URL.createObjectURL(recordedBlob);
+    outputVideo.src = url;
+    progressWrap.classList.remove('visible');
+    outputSection.style.display = 'block';
+    showToast('✅ Video ready! Click Download to save.');
+  }
+
+  function getSupportedMimeType() {
+    const types = [
+      'video/mp4; codecs="avc1.42E01E"',
+      'video/mp4',
+      'video/webm; codecs="vp9"',
+      'video/webm; codecs="vp8"',
+      'video/webm',
+    ];
+    for (const t of types) {
+      if (MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return '';
+  }
+
+  // ── Download ──────────────────────────────────────────────────────
+  btnDownload.addEventListener('click', () => {
+    if (!recordedBlob) return;
+    const mimeType = recordedBlob.type || 'video/webm';
+    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(recordedBlob);
+    a.download = 'animated-image.' + ext;
+    a.click();
+    // Keep the object URL alive briefly to ensure the browser has time to initiate the download
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  });
+
+  // ── Button wiring ─────────────────────────────────────────────────
+  btnPreview.addEventListener('click', startPreview);
+
+  btnRecord.addEventListener('click', startRecording);
+
+  btnStop.addEventListener('click', () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      stopAnimation();
+      setStatus('ready', 'Image loaded – ready');
+      btnStop.disabled = true;
+      btnPreview.disabled = false;
+      btnRecord.disabled = false;
+      if (img) renderFrame(0, 1);
+    }
+  });
+
+  // ── Helpers ───────────────────────────────────────────────────────
+  function setStatus(type, text) {
+    statusDot.className = 'status-dot' + (type !== 'ready' ? ' ' + type : '');
+    statusText.textContent = text;
+  }
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return m + ':' + String(sec).padStart(2, '0');
+  }
+
+  let toastTimeout;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove('show'), 3500);
+  }
+
+})();
+</script>
+</body>
+</html>
