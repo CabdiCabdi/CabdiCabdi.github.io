@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cabdi Animate — Bring Your Photo to Life</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="container">
+      <div class="logo">
+        <span class="logo-icon">🎬</span>
+        <span class="logo-text">Cabdi<strong>Animate</strong></span>
+      </div>
+      <nav>
+        <a href="#how-it-works">How it works</a>
+        <a href="#upload-section" class="btn-nav">Try it free</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ── Hero ───────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-text">
+        <h1>Turn a single photo<br /><span class="gradient-text">into a living animation</span></h1>
+        <p class="hero-sub">
+          Upload any portrait or image and our AI model animates it into a
+          smooth, downloadable&nbsp;MP4 — no account needed.
+        </p>
+        <a href="#upload-section" class="btn-primary">Animate my photo →</a>
+      </div>
+      <div class="hero-demo">
+        <div class="demo-card">
+          <div class="demo-before">📷 Static photo</div>
+          <div class="demo-arrow">→</div>
+          <div class="demo-after">🎥 Animated video</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ───────────────────────────────────── -->
+  <section id="how-it-works" class="how-section">
+    <div class="container">
+      <h2 class="section-title">How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Upload</h3>
+          <p>Drop or select any photo (JPG / PNG / WEBP, max 10 MB).</p>
+        </div>
+        <div class="step-divider">→</div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>AI animates</h3>
+          <p>Our GPU model on Kaggle generates natural motion in seconds.</p>
+        </div>
+        <div class="step-divider">→</div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Download</h3>
+          <p>Preview the loop right in your browser, then save your MP4.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Upload section ─────────────────────────────────── -->
+  <section id="upload-section" class="upload-section">
+    <div class="container upload-container">
+
+      <!-- Step 1 – Upload -->
+      <div id="step-upload" class="card">
+        <h2>Upload your photo</h2>
+        <p class="card-sub">Portrait photos produce the best results.</p>
+
+        <div
+          id="drop-zone"
+          class="drop-zone"
+          role="button"
+          tabindex="0"
+          aria-label="Click or drag and drop a photo to upload"
+        >
+          <input
+            type="file"
+            id="file-input"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+          />
+          <div class="drop-icon">📷</div>
+          <p class="drop-primary">Drag &amp; drop your photo here</p>
+          <p class="drop-secondary">or <span class="link">browse files</span></p>
+          <p class="drop-hint">JPG · PNG · WEBP &nbsp;|&nbsp; max 10 MB</p>
+        </div>
+
+        <!-- Preview -->
+        <div id="preview-area" class="preview-area hidden">
+          <img id="preview-img" src="" alt="Preview of your uploaded photo" />
+          <button id="btn-change" class="btn-ghost">Change photo</button>
+        </div>
+
+        <button id="btn-upload" class="btn-primary btn-block hidden" disabled>
+          Animate this photo →
+        </button>
+        <p id="upload-error" class="error-msg hidden"></p>
+      </div>
+
+      <!-- Step 2 – Processing -->
+      <div id="step-processing" class="card hidden">
+        <h2>Animating your photo…</h2>
+        <p class="card-sub">This usually takes 30–90 seconds on our GPU.</p>
+        <div class="spinner-wrap">
+          <div class="spinner"></div>
+        </div>
+        <div id="progress-log" class="progress-log"></div>
+        <p id="processing-error" class="error-msg hidden"></p>
+      </div>
+
+      <!-- Step 3 – Result -->
+      <div id="step-result" class="card hidden">
+        <h2>Your animation is ready! 🎉</h2>
+        <p class="card-sub">Preview below or download your MP4.</p>
+        <div class="video-wrap">
+          <video
+            id="result-video"
+            controls
+            loop
+            autoplay
+            muted
+            playsinline
+            preload="auto"
+          ></video>
+        </div>
+        <div class="result-actions">
+          <a id="btn-download" href="#" download="animated.mp4" class="btn-primary">
+            ⬇ Download MP4
+          </a>
+          <button id="btn-restart" class="btn-ghost">Animate another photo</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Footer ─────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>© 2025 CabdiAnimate · powered by <strong>Kaggle GPU</strong> &amp; <strong>Vercel</strong></span>
+      <span class="footer-links">
+        <a href="https://github.com/CabdiCabdi/CabdiCabdi.github.io" target="_blank" rel="noopener">GitHub</a>
+      </span>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
